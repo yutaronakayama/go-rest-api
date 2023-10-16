@@ -8,7 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Run - sets up our application
 func Run() error {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.Info("Setting Up Our APP")

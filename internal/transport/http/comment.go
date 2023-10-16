@@ -6,9 +6,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/yutaronakayama/go-rest-api/internal/comment"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"github.com/yutaronakayama/go-rest-api/internal/comment"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -21,7 +21,6 @@ type CommentService interface {
 	ReadyCheck(ctx context.Context) error
 }
 
-// GetComment - retrieve a comment by ID
 func (h *Handler) GetComment(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -45,7 +44,6 @@ func (h *Handler) GetComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// PostCommentRequest
 type PostCommentRequest struct {
 	Slug   string `json:"slug" validate:"required"`
 	Author string `json:"author" validate:"required"`
@@ -60,7 +58,6 @@ func commentFromPostCommentRequest(u PostCommentRequest) comment.Comment {
 	}
 }
 
-// PostComment - adds a new comment
 func (h *Handler) PostComment(w http.ResponseWriter, r *http.Request) {
 	var postCmtReq PostCommentRequest
 	if err := json.NewDecoder(r.Body).Decode(&postCmtReq); err != nil {
@@ -86,15 +83,12 @@ func (h *Handler) PostComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// UpdateCommentRequest -
 type UpdateCommentRequest struct {
 	Slug   string `json:"slug" validate:"required"`
 	Author string `json:"author" validate:"required"`
 	Body   string `json:"body" validate:"required"`
 }
 
-// convert the validated struct into something that the service layer understands
-// this is a little verbose, but it allows us to remove tight coupling between our components
 func commentFromUpdateCommentRequest(u UpdateCommentRequest) comment.Comment {
 	return comment.Comment{
 		Slug:   u.Slug,
@@ -103,7 +97,6 @@ func commentFromUpdateCommentRequest(u UpdateCommentRequest) comment.Comment {
 	}
 }
 
-// UpdateComment - updates a comment by ID
 func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	commentID := vars["id"]
@@ -133,7 +126,6 @@ func (h *Handler) UpdateComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// DeleteComment - deletes a comment by ID
 func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	commentID := vars["id"]

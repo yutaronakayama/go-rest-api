@@ -72,7 +72,6 @@ func (d *Database) PostComment(ctx context.Context, cmt comment.Comment) (commen
 	return cmt, nil
 }
 
-// UpdateComment - updates a comment in the database
 func (d *Database) UpdateComment(ctx context.Context, id string, cmt comment.Comment) (comment.Comment, error) {
 	cmtRow := CommentRow{
 		ID:     id,
@@ -100,7 +99,6 @@ func (d *Database) UpdateComment(ctx context.Context, id string, cmt comment.Com
 	return convertCommentRowToComment(cmtRow), nil
 }
 
-// DeleteComment - deletes a comment from the database
 func (d *Database) DeleteComment(ctx context.Context, id string) error {
 	_, err := d.Client.ExecContext(
 		ctx,

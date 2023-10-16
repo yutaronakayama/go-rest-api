@@ -10,7 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// MigrateDB - runs all migrations in the migrations
 func (d *Database) MigrateDB() error {
 	log.Info("migrating our database")
 	driver, err := postgres.WithInstance(d.Client.DB, &postgres.Config{})

@@ -1,84 +1,77 @@
 package comment
 
 import (
-	"time"
+	"context"
+	"errors"
 
-	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
-type Service struct {
-	DB *gorm.DB
-}
+var (
+	ErrFetchingComment = errors.New("could not fetch comment by ID")
+	ErrUpdatingComment = errors.New("could not update comment")
+	ErrNoCommentFound  = errors.New("no comment found")
+	ErrDeletingComment = errors.New("could not delete comment")
+	ErrNotImplemented  = errors.New("not implemented")
+)
 
 type Comment struct {
-	gorm.Model
-	Slug    string
-	Body    string
-	Author  string
-	Created time.Time
+	ID     string `json:"id"`
+	Slug   string `json:"slug"`
+	Body   string `json:"body"`
+	Author string `json:"author"`
 }
 
-type CommentService interface {
-	GetComment(ID uint) (Comment, error)
-	PostComment(comment Comment) (Comment, error)
-	UpdateComment(ID uint, newComment Comment) (Comment, error)
-	DeleteComment(ID uint) error
-	GetAllComments() ([]Comment, error)
+type CommentStore interface {
+	GetComment(context.Context, string) (Comment, error)
+	PostComment(context.Context, Comment) (Comment, error)
+	UpdateComment(context.Context, string, Comment) (Comment, error)
+	DeleteComment(context.Context, string) error
+	Ping(context.Context) error
 }
 
-func NewService(db *gorm.DB) *Service {
+type Service struct {
+	Store CommentStore
+}
+
+func NewService(store CommentStore) *Service {
 	return &Service{
-		DB: db,
+		Store: store,
 	}
 }
 
-func (s *Service) GetComment(ID uint) (Comment, error) {
-	var comment Comment
-	if result := s.DB.First(&comment, ID); result.Error != nil {
-		return Comment{}, result.Error
-	}
-	return comment, nil
-}
-
-func (s *Service) GetCommentsBySlug(slug string) ([]Comment, error) {
-	var comments []Comment
-	if result := s.DB.Find(&comments).Where("slug = ?", slug); result.Error != nil {
-		return []Comment{}, result.Error
-	}
-	return comments, nil
-}
-
-func (s *Service) PostComment(comment Comment) (Comment, error) {
-	if result := s.DB.Save(&comment); result.Error != nil {
-		return Comment{}, result.Error
-	}
-	return comment, nil
-}
-
-func (s *Service) UpdateComment(ID uint, newComment Comment) (Comment, error) {
-	comment, err := s.GetComment(ID)
+func (s *Service) GetComment(ctx context.Context, ID string) (Comment, error) {
+	cmt, err := s.Store.GetComment(ctx, ID)
 	if err != nil {
-		return Comment{}, err
+		log.Errorf("an error occured fetching the comment: %s", err.Error())
+		return Comment{}, ErrFetchingComment
 	}
-
-	if result := s.DB.Model(&comment).Updates(newComment); result.Error != nil {
-		return Comment{}, result.Error
-	}
-
-	return comment, nil
+	return cmt, nil
 }
 
-func (s *Service) DeleteComment(ID uint) error {
-	if result := s.DB.Delete(&Comment{}, ID); result.Error != nil {
-		return result.Error
+func (s *Service) PostComment(ctx context.Context, cmt Comment) (Comment, error) {
+	cmt, err := s.Store.PostComment(ctx, cmt)
+	if err != nil {
+		log.Errorf("an error occurred adding the comment: %s", err.Error())
 	}
-	return nil
+	return cmt, nil
 }
 
-func (s *Service) GetAllComments() ([]Comment, error) {
-	var comments []Comment
-	if result := s.DB.Find(&comments); result.Error != nil {
-		return []Comment{}, result.Error
+func (s *Service) UpdateComment(
+	ctx context.Context, ID string, newComment Comment,
+) (Comment, error) {
+	cmt, err := s.Store.UpdateComment(ctx, ID, newComment)
+	if err != nil {
+		log.Errorf("an error occurred updating the comment: %s", err.Error())
 	}
-	return comments, nil
+	return cmt, nil
+}
+
+func (s *Service) DeleteComment(ctx context.Context, ID string) error {
+	return s.Store.DeleteComment(ctx, ID)
+}
+
+func (s *Service) ReadyCheck(ctx context.Context) error {
+	log.Info("Checking readiness")
+	return s.Store.Ping(ctx)
 }
